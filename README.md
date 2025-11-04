@@ -1,7 +1,18 @@
+“This project helped me understand how important data preprocessing is before any model training.
+I created this notebook and guide to help beginners connect preprocessing concepts with real ML outcomes.”
+
 🧠 Project Overview
 
 This project demonstrates the end-to-end data preprocessing pipeline — from handling missing values and scaling to feature transformation and model evaluation — using the Credit Card Fraud Detection Dataset.
 It’s designed as a learning guide for anyone diving deep into data preprocessing, emphasizing how data quality impacts model performance.
+
+KEY TAKEAWAY
+
+Data preprocessing improved recall from 0.13 → 0.91
+
+Scaling & transformation stabilized numeric features
+
+SMOTE effectively balanced rare fraud cases
 
 📂 Dataset
 
