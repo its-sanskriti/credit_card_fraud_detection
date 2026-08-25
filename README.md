@@ -1,107 +1,44 @@
-“This project helped me understand how important data preprocessing is before any model training.
-I created this notebook and guide to help beginners connect preprocessing concepts with real ML outcomes.”
+# Fraud Analyst Copilot
 
-🧠 Project Overview
+An LLM-based copilot that explains flagged fraud transactions in plain English, built as Phase 1 of a two-phase Engineering Project (8 credits).
 
-This project demonstrates the end-to-end data preprocessing pipeline — from handling missing values and scaling to feature transformation and model evaluation — using the Credit Card Fraud Detection Dataset.
-It’s designed as a learning guide for anyone diving deep into data preprocessing, emphasizing how data quality impacts model performance.
+## What it does
 
-KEY TAKEAWAY
+Takes a transaction flagged as potential fraud by a trained classifier and generates a short, plain-English explanation of *why* it was flagged — grounded in SHAP feature attributions rather than the LLM guessing. Built for a bank fraud analyst who needs to quickly understand a model's reasoning without reading raw SHAP values or feature codes.
 
-Data preprocessing improved recall from 0.13 → 0.91
+## Pipeline
 
-Scaling & transformation stabilized numeric features
+```
+Transaction → XGBoost classifier → SHAP TreeExplainer → 
+structured feature dict (top drivers + values) → 
+LLM prompt (Gemini) → plain-English explanation
+```
 
-SMOTE effectively balanced rare fraud cases
+1. **Model**: XGBoost classifier trained on preprocessed transaction data (SMOTE-balanced, StandardScaler-normalized). Accuracy 0.999, ROC-AUC 0.983, recall 0.88 on the minority (fraud) class.
+2. **Explainability**: SHAP `TreeExplainer` computes exact per-transaction feature attributions.
+3. **Structuring**: Top contributing features (name, SHAP impact, actual value) are extracted into a clean dict per transaction.
+4. **Generation**: The dict is formatted into a prompt and sent to Gemini, which returns a 3-4 sentence explanation suitable for a non-technical analyst.
+5. **Output**: Single-transaction function (`analyze_transaction`) and a batch mode that processes multiple flagged transactions into a CSV of probability + explanation pairs.
 
-📂 Dataset
+## Example output
 
-Source: Kaggle - Credit Card Fraud Detection
+> This transaction has been flagged with an extremely high fraud probability of 99.2%. The primary drivers behind this risk score are severe abnormal patterns in key transaction features, which closely match known fraudulent behavior profiles. While one minor indicator slightly pushed toward legitimacy, it is heavily outweighed by these strong risk signals. We recommend prioritizing this account for immediate review or temporary block.
 
-Shape: 284,807 rows × 31 columns
+## Scope and limitations (stated plainly)
 
-Features V1–V28 are PCA-transformed components
+- **Demo-scale, not production**: runs on a fixed, static test set — no live/streaming transaction ingestion.
+- **PCA-anonymized features**: the dataset's features (V1–V28) are PCA components with no real-world meaning. Explanations describe *statistical deviation* from normal patterns, not real-world reasons like "unusual location" or "high amount." This is an honest constraint of the dataset, not the pipeline.
+- **No human-in-the-loop feedback**: analyst corrections or overrides aren't fed back into the model.
+- **No monitoring or retraining loop**: that's out of scope for this phase.
+- **Batch demo covers a representative sample** (8-10 flagged transactions), not the full flagged set — sufficient to prove the pipeline works end-to-end.
 
-Amount represents transaction value
+## Roadmap
 
-Class is the target (0 → Genuine, 1 → Fraud)
+This is **Phase 1** of a two-phase Engineering Project:
 
-1️⃣ Data Loading & Initial Exploration
+- **Phase 1 (current)**: This demo — SHAP-grounded LLM explanations for flagged transactions.
+- **Phase 2 (next semester)**: Real-time MLOps pipeline on AWS — streaming ingestion (Kinesis), inference (Lambda/Fargate/SageMaker), drift monitoring (Evidently AI), automated retraining (Step Functions), and observability (CloudWatch).
 
-Loaded dataset using Pandas
+## Stack
 
-Checked shape, data types, and null values
-
-No missing values found ✅
-2️⃣ Data Imbalance Analysis
-
-Verified class distribution (fraud vs. genuine)
-
-Severe imbalance observed: Fraud ≈ 0.17% of total transactions
-
-Used SMOTE later to synthetically balance classes
-
-3️⃣ Outlier & Distribution Analysis
-
-Visualized Amount column using boxplots and histograms
-
-Identified heavy right-skew → opted for log transformation
-
-4️⃣ Transformation
-
-Applied log transformation to Amount
-
-Resulted in near-Gaussian distribution
-
-Confirmed via describe() summary and visualization
-
-📏 5️⃣ Feature Scaling
-
-Used StandardScaler for normalized Gaussian-like data
-
-Resulting Amount_scaled feature:
-
-Mean ≈ 0
-
-Std ≈ 1
-
-Gaussian-shaped distribution ✅
-
-🧩 6️⃣ Splitting Dataset
-
-Split into X_train, X_test, y_train, y_test (80:20 ratio)
-
-Used stratify=y to maintain class ratio
-
-🧠 7️⃣ Model Training (Baseline)
-
-Trained Logistic Regression on SMOTE-balanced data
-
-Tuned max_iter=1000 to avoid convergence warning
-
-Evaluated with accuracy, recall, F1, and ROC-AUC metrics
-
-📊 8️⃣ Model Evaluation
-
-Confusion Matrix:
-
-True Negatives: ✅ 56,267
-
-False Positives: ⚠️ 597
-
-False Negatives: ❌ 9
-
-True Positives: ✅89
-Metrics Summary:
-
-Metric	Score
-Accuracy	0.99
-Recall (Fraud)	0.91
-ROC-AUC	0.97
-9️⃣ Precision–Recall & ROC Curves
-
-Visualized Confusion Matrix, ROC Curve, and Precision-Recall Curve
-
-PR curve offers clearer insights for imbalanced data
-
-Observed strong recall with moderate precision — ideal tradeoff for fraud detection
+XGBoost, SHAP, Google Gemini API (`gemini-3.1-flash-lite`), pandas, scikit-learn, Google Colab
